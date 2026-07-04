@@ -6,8 +6,8 @@ import { app } from './app.js';
 
 connectDB()
 .then(() => {
-  app.listen(process.env.PORT || 3006, () => {
-    console.log(`app is listening on https://localhost:${process.env.PORT}`)
+  app.listen(process.env.PORT || 3005, () => {
+    console.log(`app is listening on http://localhost:${process.env.PORT}`)
   })
 })
 .catch((err) => {
