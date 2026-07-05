@@ -14,7 +14,7 @@ const generateAccessAndRefreshTokens = async(userId) => {
     user.refreshToken = refreshToken
     await user.save({validateBeforeSave: false})
 
-    return (accessToken, refreshToken)
+    return {accessToken, refreshToken}
     
   } catch (error) {
     throw new ApiError(500, "error while generating tokens")
@@ -131,7 +131,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
       httpOnly: true,
-      secure: true,
+      secure: false,
     }
 
     res
