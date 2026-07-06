@@ -35,4 +35,17 @@ import fs from "fs"
 
     }
 
-    export {uploadOnCloudinary}
+    const deleteImage = async (publicId) => {
+  try {
+    const result = await cloudinary.uploader.destroy(publicId, {
+      invalidate: true // Purges cached copies from the CDN
+    });
+    console.log(result); // Returns: { result: 'ok' }
+    return true;
+  } catch (error) {
+    console.error('Deletion failed:', error);
+    return false;
+  }
+};
+
+    export {uploadOnCloudinary, deleteImage}

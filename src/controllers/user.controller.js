@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {deleteImage, uploadOnCloudinary} from "../utils/cloudinary.js"
 import jwt from "jsonwebtoken"
 
 
@@ -21,6 +21,26 @@ const generateAccessAndRefreshTokens = async(userId) => {
     throw new ApiError(500, "error while generating tokens")
   }
 }
+
+const getPublicIdFromUrl = (url) => {
+ try {
+  const parts = url.split('/upload/');
+  if (parts.length < 2) return null;
+
+ 
+  const remainingPath = parts[1].replace(/^v\d+\//, '');
+
+ 
+  const publicId = remainingPath.substring(0, remainingPath.lastIndexOf('.'));
+  
+  return publicId;
+  
+ } catch (error) {
+  console.log("error while getting publicId from url to delete image")
+  return null
+ }
+  
+};
 
 const registerUser = asyncHandler(async (req, res) => {
 
@@ -293,6 +313,11 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "error while uploading avatar file")
   }
 
+  const publicId = getPublicIdFromUrl(req.user?.avatar)
+
+  if(publicId) deleteImage(publicId)
+  
+
   const user = await User.findByIdAndUpdate(req.user?._id,
     { 
       $set:{
@@ -325,6 +350,11 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     {
     throw new ApiError(400, "error while uploading coverImage file")
   }
+
+  const publicId = getPublicIdFromUrl(req.user?.avatar)
+
+  if(publicId) deleteImage(publicId)
+  
 
   const user = await User.findByIdAndUpdate(req.user?._id,
     { 
