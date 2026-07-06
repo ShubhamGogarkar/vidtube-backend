@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/apiResponse.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import jwt from "jsonwebtoken"
@@ -51,7 +51,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
 
-  const avatarLocalPath = req.files?.avatar[0]?.path;
+  const avatarLocalPath = req.files?.avatar?.[0]?.path;
   //const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
   let coverImageLocalPath;
@@ -132,7 +132,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
       httpOnly: true,
-      secure: false,
+      secure: true,
     }
 
     res
@@ -204,7 +204,7 @@ try {
       secure: true,
     }
 
-  const {accessToken, newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
+  const {accessToken, refreshToken: newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
 
   return res
   .status(200)
