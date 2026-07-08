@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import {deleteImage, uploadOnCloudinary} from "../utils/cloudinary.js"
 import jwt from "jsonwebtoken"
-
+import mongoose from "mongoose"
 
 const generateAccessAndRefreshTokens = async(userId) => {
   try {
@@ -55,7 +55,6 @@ const registerUser = asyncHandler(async (req, res) => {
     // return res
 
   const {username,fullName,email,password} = req.body;
-  console.log(email);
   if (
     [fullName, email, username, password].some((field) => field?.trim() === "")
   ) {
@@ -174,8 +173,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set:{
-        refreshToken: undefined
+      $unset:{
+        refreshToken: 1
       }
     },
     {
@@ -351,7 +350,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "error while uploading coverImage file")
   }
 
-  const publicId = getPublicIdFromUrl(req.user?.avatar)
+  const publicId = getPublicIdFromUrl(req.user?.coverImage)
 
   if(publicId) deleteImage(publicId)
   
