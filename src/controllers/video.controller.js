@@ -4,8 +4,27 @@ import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {deleteFromCloudinary, uploadOnCloudinary, } from "../utils/cloudinary.js"
 
+const getPublicIdFromUrl = (url) => {
+ try {
+  const parts = url.split('/upload/');
+  if (parts.length < 2) return null;
+
+ 
+  const remainingPath = parts[1].replace(/^v\d+\//, '');
+
+ 
+  const publicId = remainingPath.substring(0, remainingPath.lastIndexOf('.'));
+  
+  return publicId;
+  
+ } catch (error) {
+  console.log("error while getting publicId from url to delete image")
+  return null
+ }
+  
+};
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
@@ -147,6 +166,37 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
+   const {title, description} = req.body
+
+   const thumbnailLocalPath = req.file?.path
+   const preUpdateVideo = await Video.findById(videoId)
+  let thumbnail;
+
+  if(thumbnailLocalPath){
+   thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+
+ const publicId = getPublicIdFromUrl(preUpdateVideo.thumbnail)
+
+  if(publicId && thumbnail) {await deleteFromCloudinary(publicId)}
+}
+
+const video = await Video.findByIdAndUpdate(videoId,
+    { 
+      $set:{
+        thumbnail: thumbnail?.url,
+        title,
+        description
+      }
+    },{
+       returnDocument: 'after'
+    }
+    
+  )
+
+
+  return res
+  .status(200)
+  .json( new ApiResponse(200,video,"video updated successfully"))
 
 })
 

@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
-import {deleteImage, uploadOnCloudinary} from "../utils/cloudinary.js"
+import {deleteFromCloudinary, uploadOnCloudinary} from "../utils/cloudinary.js"
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose"
 
@@ -314,7 +314,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   const publicId = getPublicIdFromUrl(req.user?.avatar)
 
-  if(publicId) deleteImage(publicId)
+  if(publicId) deleteFromCloudinary(publicId)
   
 
   const user = await User.findByIdAndUpdate(req.user?._id,
@@ -352,7 +352,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
   const publicId = getPublicIdFromUrl(req.user?.coverImage)
 
-  if(publicId) deleteImage(publicId)
+  if(publicId) await deleteFromCloudinary(publicId)
   
 
   const user = await User.findByIdAndUpdate(req.user?._id,

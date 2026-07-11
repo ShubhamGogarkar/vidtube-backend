@@ -35,7 +35,7 @@ import fs from "fs"
 
     }
 
-    const deleteImage = async (publicId) => {
+    const deleteFromCloudinary = async (publicId) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId, {
       invalidate: true // Purges cached copies from the CDN
@@ -48,4 +48,4 @@ import fs from "fs"
   }
 };
 
-    export {uploadOnCloudinary, deleteImage}
+    export {uploadOnCloudinary, deleteFromCloudinary}
