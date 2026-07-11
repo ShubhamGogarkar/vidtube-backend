@@ -10,6 +10,59 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js"
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+
+     const matchStage = {
+    isPublished: true, // usually only show published videos publicly
+  }
+
+  function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+  
+  // text search on title/description
+  if (query) {
+    matchStage.$or = [
+      { title: { $regex: escapeRegex(query), $options: "i" } },
+      { description: { $regex: escapeRegex(query), $options: "i" } },
+    ]
+  }
+
+  // filter by owner
+  if (userId) {
+    if (!mongoose.isValidObjectId(userId)) {
+      throw new ApiError(400, "Invalid userId")
+    }
+    matchStage.owner = new mongoose.Types.ObjectId(userId)
+  }
+
+  const pipeline = [
+    { $match: matchStage },
+  ]
+
+  // sorting — whitelist fields to avoid arbitrary key injection
+  const allowedSortFields = ["createdAt", "views", "duration", "title"]
+  const sortField = allowedSortFields.includes(sortBy) ? sortBy : "createdAt"
+  const sortOrder = sortType === "asc" ? 1 : -1
+
+  pipeline.push({ $sort: { [sortField]: sortOrder } })
+
+  const options = {
+  page: parseInt(page, 10),
+  limit: parseInt(limit, 10)
+  }
+
+  const videoAggregate = Video.aggregate(pipeline)
+  const videos = await Video.aggregatePaginate(videoAggregate, options)
+
+  if(!videos)
+  {
+    throw new ApiError(500, 'error while getting the videos')
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, videos, "Videos fetched successfully"))
+    
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
