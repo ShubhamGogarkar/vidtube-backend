@@ -37,6 +37,30 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   const pipeline = [
     { $match: matchStage },
+    {
+        $lookup: {
+          from: "users",         
+          localField: "owner",    
+          foreignField: "_id",     
+          as: "owner",             
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                avatar: 1,
+                fullName: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$owner",
+          preserveNullAndEmptyArrays: true, 
+        },
+      },
   ]
 
   // sorting — whitelist fields to avoid arbitrary key injection
@@ -108,6 +132,16 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
+    if (!mongoose.isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid userId")
+    }
+
+    const video = await Video.findById(videoId).populate("owner","username avatar fullName")
+    
+    return res
+    .status(200)
+    .json(new ApiResponse(200, video, "Video fetched successfully"))
+
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
