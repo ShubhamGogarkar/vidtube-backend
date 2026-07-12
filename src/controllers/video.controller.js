@@ -110,6 +110,9 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
+    if (!mongoose.isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid userId")
+    }
     // TODO: get video, upload to cloudinary, create video
     console.log(req.files)
      if (!req.files?.video?.[0] || !req.files?.thumbnail?.[0]) {
@@ -152,19 +155,26 @@ const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
     if (!mongoose.isValidObjectId(videoId)) {
-      throw new ApiError(400, "Invalid userId")
+      throw new ApiError(400, "Invalid videoId")
     }
 
     const video = await Video.findById(videoId).populate("owner","username avatar fullName")
     
+    if(!video){
+    throw new ApiError(500, "error while fetching the video")
+    }
+
     return res
     .status(200)
     .json(new ApiResponse(200, video, "Video fetched successfully"))
 
 })
 
-const updateVideo = asyncHandler(async (req, res) => {
+const updateVideo = asyncHandler(async (req, res) => { 
     const { videoId } = req.params
+    if (!mongoose.isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid userId")
+    }
     //TODO: update video details like title, description, thumbnail
    const {title, description} = req.body
 
@@ -193,6 +203,10 @@ const video = await Video.findByIdAndUpdate(videoId,
     
   )
 
+  if(!video){
+    throw new ApiError(500, "Error while updating video")
+    }
+
 
   return res
   .status(200)
@@ -202,7 +216,14 @@ const video = await Video.findByIdAndUpdate(videoId,
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    if (!mongoose.isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid userId")
+    }
     //TODO: delete video
+   await Video.findByIdAndDelete(videoId)
+   return res
+   .status(200)
+   .json( new ApiResponse(200,{},"Video deleted successfully"))
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
