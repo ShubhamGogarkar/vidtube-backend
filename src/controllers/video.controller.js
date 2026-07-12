@@ -110,9 +110,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
-    if (!mongoose.isValidObjectId(videoId)) {
-      throw new ApiError(400, "Invalid userId")
-    }
     // TODO: get video, upload to cloudinary, create video
     console.log(req.files)
      if (!req.files?.video?.[0] || !req.files?.thumbnail?.[0]) {
@@ -173,15 +170,14 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => { 
     const { videoId } = req.params
     if (!mongoose.isValidObjectId(videoId)) {
-      throw new ApiError(400, "Invalid userId")
+      throw new ApiError(400, "Invalid videoId")
     }
     //TODO: update video details like title, description, thumbnail
    const {title, description} = req.body
 
    const thumbnailLocalPath = req.file?.path
    const preUpdateVideo = await Video.findById(videoId)
-  let thumbnail;
-
+  let thumbnail = preUpdateVideo.thumbnail;
   if(thumbnailLocalPath){
    thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
 
@@ -190,7 +186,7 @@ const updateVideo = asyncHandler(async (req, res) => {
   if(publicId && thumbnail) {await deleteFromCloudinary(publicId)}
 }
 
-const video = await Video.findByIdAndUpdate(videoId,
+ const video = await Video.findByIdAndUpdate(videoId,
     { 
       $set:{
         thumbnail: thumbnail?.url,
@@ -217,7 +213,7 @@ const video = await Video.findByIdAndUpdate(videoId,
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     if (!mongoose.isValidObjectId(videoId)) {
-      throw new ApiError(400, "Invalid userId")
+      throw new ApiError(400, "Invalid videoId")
     }
     //TODO: delete video
    await Video.findByIdAndDelete(videoId)
@@ -228,6 +224,24 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+     if (!mongoose.isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid videoId")
+    }
+
+    const preUpdateVideo = await Video.findById(videoId)
+
+    const video = await Video.findByIdAndUpdate(videoId,{ 
+      $set:{
+        isPublished: !preUpdateVideo.isPublished,
+      }
+    },{
+       returnDocument: 'after'
+    })
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,video,"published status updated"))
+
 })
 
 export {
