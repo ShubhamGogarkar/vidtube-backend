@@ -186,7 +186,10 @@ const updateVideo = asyncHandler(async (req, res) => {
   if(publicId && thumbnail) {await deleteFromCloudinary(publicId)}
 }
 
- const video = await Video.findByIdAndUpdate(videoId,
+ const video = await Video.findOneAndUpdate({  
+        _id: tweetId,
+        owner: req.user._id
+    },
     { 
       $set:{
         thumbnail: thumbnail?.url,
@@ -216,7 +219,10 @@ const deleteVideo = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Invalid videoId")
     }
     //TODO: delete video
-   await Video.findByIdAndDelete(videoId)
+   await Video.findOneAndDelete({  
+        _id: tweetId,
+        owner: req.user._id
+    })
    return res
    .status(200)
    .json( new ApiResponse(200,{},"Video deleted successfully"))
