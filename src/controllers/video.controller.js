@@ -1,6 +1,8 @@
 import mongoose, {isValidObjectId} from "mongoose"
 import {Video} from "../models/video.model.js"
+import {Comment} from "../models/comment.model.js"
 import {User} from "../models/user.model.js"
+import {Like} from "../models/like.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
@@ -111,7 +113,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
     // TODO: get video, upload to cloudinary, create video
-    console.log(req.files)
+
      if (!req.files?.video?.[0] || !req.files?.thumbnail?.[0]) {
     throw new ApiError(400, "video and thumbnail are required");
   }
@@ -187,7 +189,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 }
 
  const video = await Video.findOneAndUpdate({  
-        _id: tweetId,
+        _id: videoId,
         owner: req.user._id
     },
     { 
@@ -219,10 +221,27 @@ const deleteVideo = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Invalid videoId")
     }
     //TODO: delete video
-   await Video.findOneAndDelete({  
-        _id: tweetId,
+    const video = await Video.findById(videoId)
+
+
+    const videoPublicId = getPublicIdFromUrl(video.videoFile)
+    const thumbnailPublicId = getPublicIdFromUrl(video.thumbnail)
+
+    if (videoPublicId) await deleteFromCloudinary(videoPublicId, "video")
+    if (thumbnailPublicId) await deleteFromCloudinary(thumbnailPublicId, "image")
+
+    const delVideo = await Video.findOneAndDelete({  
+        _id: videoId,
         owner: req.user._id
     })
+
+    if(!delVideo)
+    {
+      throw new ApiError(404, "Video not found or you're not authorized to delete it")
+    }
+
+     await Like.deleteMany({ video: videoId })
+     await Comment.deleteMany({ video: videoId })
    return res
    .status(200)
    .json( new ApiResponse(200,{},"Video deleted successfully"))

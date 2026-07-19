@@ -35,10 +35,11 @@ import fs from "fs"
 
     }
 
-    const deleteFromCloudinary = async (publicId) => {
+    const deleteFromCloudinary = async (publicId, resourceType = "auto") => {
   try {
     const result = await cloudinary.uploader.destroy(publicId, {
-      invalidate: true // Purges cached copies from the CDN
+      invalidate: true, // Purges cached copies from the CDN
+      resource_type: resourceType
     });
     console.log(result); // Returns: { result: 'ok' }
     return true;
