@@ -6,41 +6,22 @@ import {Like} from "../models/like.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import {deleteFromCloudinary, uploadOnCloudinary, } from "../utils/cloudinary.js"
+import {deleteFromCloudinary, uploadOnCloudinary, getPublicIdFromUrl } from "../utils/cloudinary.js"
 
-const getPublicIdFromUrl = (url) => {
- try {
-  const parts = url.split('/upload/');
-  if (parts.length < 2) return null;
-
- 
-  const remainingPath = parts[1].replace(/^v\d+\//, '');
-
- 
-  const publicId = remainingPath.substring(0, remainingPath.lastIndexOf('.'));
-  
-  return publicId;
-  
- } catch (error) {
-  console.log("error while getting publicId from url to delete image")
-  return null
- }
-  
-};
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-    //TODO: get all videos based on query, sort, pagination
+
 
      const matchStage = {
-    isPublished: true, // usually only show published videos publicly
+    isPublished: true, 
   }
 
   function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
   
-  // text search on title/description
+
   if (query) {
     matchStage.$or = [
       { title: { $regex: escapeRegex(query), $options: "i" } },
@@ -48,7 +29,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     ]
   }
 
-  // filter by owner
+
   if (userId) {
     if (!mongoose.isValidObjectId(userId)) {
       throw new ApiError(400, "Invalid userId")
@@ -84,7 +65,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
       },
   ]
 
-  // sorting — whitelist fields to avoid arbitrary key injection
+
   const allowedSortFields = ["createdAt", "views", "duration", "title"]
   const sortField = allowedSortFields.includes(sortBy) ? sortBy : "createdAt"
   const sortOrder = sortType === "asc" ? 1 : -1
@@ -112,7 +93,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
-    // TODO: get video, upload to cloudinary, create video
+   
 
      if (!req.files?.video?.[0] || !req.files?.thumbnail?.[0]) {
     throw new ApiError(400, "video and thumbnail are required");
@@ -127,6 +108,10 @@ const publishAVideo = asyncHandler(async (req, res) => {
     if(!videoFile)
       {
         throw new ApiError(400, "video file is required");
+      }
+    if(!thumbnail)
+      {
+        throw new ApiError(400, "thumbnail file is required");
       }
 
     const video = await Video.create({
@@ -152,7 +137,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: get video by id
+   
     if (!mongoose.isValidObjectId(videoId)) {
       throw new ApiError(400, "Invalid videoId")
     }
@@ -160,7 +145,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     const video = await Video.findById(videoId).populate("owner","username avatar fullName")
     
     if(!video){
-    throw new ApiError(500, "error while fetching the video")
+    throw new ApiError(404, "video not found")
     }
 
     return res
@@ -174,7 +159,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     if (!mongoose.isValidObjectId(videoId)) {
       throw new ApiError(400, "Invalid videoId")
     }
-    //TODO: update video details like title, description, thumbnail
+ 
    const {title, description} = req.body
 
    const thumbnailLocalPath = req.file?.path
@@ -220,9 +205,16 @@ const deleteVideo = asyncHandler(async (req, res) => {
     if (!mongoose.isValidObjectId(videoId)) {
       throw new ApiError(400, "Invalid videoId")
     }
-    //TODO: delete video
+
     const video = await Video.findById(videoId)
 
+    if(!video) {
+      throw new ApiError(404, "Video not found")
+    }
+
+    if(!video.owner.equals(req.user._id)) {
+      throw new ApiError(403, "You are not authorized to delete this video")
+    }
 
     const videoPublicId = getPublicIdFromUrl(video.videoFile)
     const thumbnailPublicId = getPublicIdFromUrl(video.thumbnail)
@@ -254,6 +246,14 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     }
 
     const preUpdateVideo = await Video.findById(videoId)
+    
+    if(!preUpdateVideo) {
+      throw new ApiError(404, "Video not found")
+    }
+
+    if(!preUpdateVideo.owner.equals(req.user._id)) {
+      throw new ApiError(403, "You are not authorized to change the publish status of this video")
+    }
 
     const video = await Video.findByIdAndUpdate(videoId,{ 
       $set:{

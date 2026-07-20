@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
-import {deleteFromCloudinary, uploadOnCloudinary} from "../utils/cloudinary.js"
+import {deleteFromCloudinary, uploadOnCloudinary, getPublicIdFromUrl} from "../utils/cloudinary.js"
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose"
 
@@ -22,37 +22,8 @@ const generateAccessAndRefreshTokens = async(userId) => {
   }
 }
 
-const getPublicIdFromUrl = (url) => {
- try {
-  const parts = url.split('/upload/');
-  if (parts.length < 2) return null;
-
- 
-  const remainingPath = parts[1].replace(/^v\d+\//, '');
-
- 
-  const publicId = remainingPath.substring(0, remainingPath.lastIndexOf('.'));
-  
-  return publicId;
-  
- } catch (error) {
-  console.log("error while getting publicId from url to delete image")
-  return null
- }
-  
-};
 
 const registerUser = asyncHandler(async (req, res) => {
-
-   // get user details from frontend
-    // validation - not empty
-    // check if user already exists: username, email
-    // check for images, check for avatar
-    // upload them to cloudinary, avatar
-    // create user object - create entry in db
-    // remove password and refresh token field from response
-    // check for user creation
-    // return res
 
   const {username,fullName,email,password} = req.body;
   if (
@@ -71,7 +42,6 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
-  //const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
   let coverImageLocalPath;
   if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
@@ -116,12 +86,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
 
-  // req body -> data
-    // username or email
-    //find the user
-    //password check
-    //access and referesh token
-    //send cookie
+
     const {email, username, password} = req.body;
 
     if(!email && !username)
@@ -151,7 +116,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
     }
 
     res
@@ -184,7 +149,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 
    const options = {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production"
     }
 
     return res
@@ -220,7 +185,7 @@ try {
 
   const options = {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production"
     }
 
   const {accessToken, refreshToken: newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
@@ -314,7 +279,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   const publicId = getPublicIdFromUrl(req.user?.avatar)
 
-  if(publicId) deleteFromCloudinary(publicId)
+  if(publicId) await deleteFromCloudinary(publicId)
   
 
   const user = await User.findByIdAndUpdate(req.user?._id,
