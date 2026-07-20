@@ -88,4 +88,4 @@ Most routes require authentication via a valid access token (sent as an httpOnly
 
 ## License
 
-ISC
+MIT
