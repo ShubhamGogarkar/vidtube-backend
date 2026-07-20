@@ -164,6 +164,16 @@ const updateVideo = asyncHandler(async (req, res) => {
 
    const thumbnailLocalPath = req.file?.path
    const preUpdateVideo = await Video.findById(videoId)
+
+   if(!preUpdateVideo)
+   {
+    throw new ApiError(404, "Video not found")
+   }
+
+    if(!preUpdateVideo.owner.equals(req.user._id)) {
+      throw new ApiError(403, "You are not authorized to update this video")
+    }
+
   let thumbnail = preUpdateVideo.thumbnail;
   if(thumbnailLocalPath){
    thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
