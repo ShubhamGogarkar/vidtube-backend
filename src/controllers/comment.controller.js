@@ -88,7 +88,7 @@ const updateComment = asyncHandler(async (req, res) => {
     const comment = await Comment.findOneAndUpdate(
         { _id: commentId, owner: req.user._id },
         { content: content.trim() },
-        { new: true }
+        { returnDocument: 'after' }
     )
 
     if (!comment) {
