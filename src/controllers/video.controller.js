@@ -180,7 +180,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 
  const publicId = getPublicIdFromUrl(preUpdateVideo.thumbnail)
 
-  if(publicId && thumbnail) {await deleteFromCloudinary(publicId)}
+  if(publicId && thumbnail) {await deleteFromCloudinary(publicId, "image")}
 }
 
  const video = await Video.findOneAndUpdate({  
