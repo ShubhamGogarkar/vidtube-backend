@@ -142,8 +142,15 @@ const getVideoById = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Invalid videoId")
     }
 
-    const video = await Video.findById(videoId).populate("owner","username avatar fullName")
+    const video = await  Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } }, {  returnDocument: "after" }).populate("owner","username avatar fullName");
     
+    // await Video.findById(videoId).populate("owner","username avatar fullName")
+      
+   
+
+
+
+
     if(!video){
     throw new ApiError(404, "video not found")
     }
