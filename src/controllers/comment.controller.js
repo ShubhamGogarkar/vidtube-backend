@@ -7,7 +7,7 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 
 const getVideoComments = asyncHandler(async (req, res) => {
-  
+    const user = req.user
     const {videoId} = req.params
     const {page = 1, limit = 10} = req.query
     const options = {
@@ -34,9 +34,33 @@ const getVideoComments = asyncHandler(async (req, res) => {
             as: "owner",
             pipeline: [
                 { $project: { username: 1, avatar: 1 } }
-            ]
-        }},
+            ]       }
+        },
         { $unwind: "$owner" },
+        {$lookup: {
+            from: "likes",
+            localField: "_id",
+            foreignField: "comment",
+            as: "likes",
+                   },
+        },
+
+        {
+            $addFields: {
+            isLiked: {
+            $in: [
+                     new mongoose.Types.ObjectId(req.user._id),
+                     "$likes.likedBy",
+                 ],
+                      },
+                        },
+        },
+
+        {
+            $project: {
+            likes: 0,
+                      },
+        },
     ])
 
     const comments = await Comment.aggregatePaginate(commentAggregate, options)
