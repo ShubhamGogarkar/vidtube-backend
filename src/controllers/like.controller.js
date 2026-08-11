@@ -190,7 +190,9 @@ const getLikedVideos = asyncHandler(async (req, res) => {
                             owner: 1,
                             views: 1,
                             duration: 1,
-                            videoFile: 1
+                            videoFile: 1,
+                            createdAt: 1,
+                            updatedAt: 1
                         }
 
                     }
@@ -199,6 +201,9 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         },
         {
             $unwind: "$video"
+        },
+        {
+        $replaceRoot: { newRoot: "$video" }   
         }
     ])
 
