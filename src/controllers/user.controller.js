@@ -431,7 +431,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
                 from: "videos",
                 localField: "watchHistory",
                 foreignField: "_id",
-                as: "watchHistory",
+                as: "watchHistoryDocs", 
                 pipeline: [
                     {
                         $lookup: {
@@ -458,6 +458,27 @@ const getWatchHistory = asyncHandler(async(req, res) => {
                         }
                     }
                 ]
+            }
+        },
+        { 
+            $addFields: {
+                watchHistory: {
+                    $map: {
+                        input: "$watchHistory",
+                        as: "id",
+                        in: {
+                            $arrayElemAt: [
+                                "$watchHistoryDocs",
+                                { $indexOfArray: ["$watchHistoryDocs._id", "$$id"] }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                watchHistoryDocs: 0
             }
         }
     ])
