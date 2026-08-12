@@ -144,16 +144,16 @@ const getVideoById = asyncHandler(async (req, res) => {
 
     const video = await  Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } }, {  returnDocument: "after" }).populate("owner","username avatar fullName");
     
-    // await Video.findById(videoId).populate("owner","username avatar fullName")
-      
-   
-
-
-
-
     if(!video){
     throw new ApiError(404, "video not found")
     }
+    
+    if (req.user) {
+    User.findByIdAndUpdate(req.user._id, { $pull: { watchHistory: videoId } })
+        .then(() => User.findByIdAndUpdate(req.user._id, { $push: { watchHistory: { $each: [videoId], $position: 0, $slice: 30 } } }))
+        .catch((err) => console.error("watchHistory update failed:", err));
+    }
+    
 
     return res
     .status(200)

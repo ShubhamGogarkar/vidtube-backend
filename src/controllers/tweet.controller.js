@@ -25,7 +25,53 @@ const getUserTweets = asyncHandler(async (req, res) => {
     if (!isValidObjectId(userId)) {
         throw new ApiError(400, "Invalid user id")
     }
-    const tweets = await Tweet.find({ owner: userId }).populate("owner", "username")
+   const tweets = await Tweet.aggregate([
+        {
+            $match: {
+                owner: new mongoose.Types.ObjectId(userId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    { $project: { username: 1 , _id: 1 } }
+                ]
+            }
+        },
+        {
+            $unwind: "$owner"
+        },
+        {$lookup: {
+            from: "likes",
+            localField: "_id",
+            foreignField: "tweet",
+            as: "likes",
+                   },
+        },
+
+        {
+            $addFields: {
+            isLiked: {
+            $in: [
+                     new mongoose.Types.ObjectId(req.user._id),
+                     "$likes.likedBy",
+                 ],
+                      },
+                        },
+        },
+
+        {
+            $project: {
+            likes: 0,
+                      },
+        },
+    ])
+
+
     return res.status(200).json(new ApiResponse(200, tweets, "User tweets fetched successfully"))
 })
 
