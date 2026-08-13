@@ -102,4 +102,6 @@ UserSchema.methods.generateRefreshToken = function(){
   )
 }
 
+UserSchema.index({ watchHistory: 1 })
+
 export const User = mongoose.model('User', UserSchema);

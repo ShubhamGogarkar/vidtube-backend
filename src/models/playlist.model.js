@@ -24,4 +24,6 @@ const playlistSchema = new Schema({
 
 },{timestamps: true})
 
+playlistSchema.index({ video: 1 })
+
 export const Playlist = mongoose.model("Playlist", playlistSchema)

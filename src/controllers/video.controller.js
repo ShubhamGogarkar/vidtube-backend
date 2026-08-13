@@ -1,5 +1,6 @@
 import mongoose, {isValidObjectId} from "mongoose"
 import {Video} from "../models/video.model.js"
+import {Playlist} from "../models/playlist.model.js"
 import {Comment} from "../models/comment.model.js"
 import {User} from "../models/user.model.js"
 import {Like} from "../models/like.model.js"
@@ -233,27 +234,37 @@ const deleteVideo = asyncHandler(async (req, res) => {
       throw new ApiError(403, "You are not authorized to delete this video")
     }
 
-    const videoPublicId = getPublicIdFromUrl(video.videoFile)
-    const thumbnailPublicId = getPublicIdFromUrl(video.thumbnail)
-
-    if (videoPublicId) await deleteFromCloudinary(videoPublicId, "video")
-    if (thumbnailPublicId) await deleteFromCloudinary(thumbnailPublicId, "image")
-
-    const delVideo = await Video.findOneAndDelete({  
+    const delVideo = await Video.findOneAndDelete({
         _id: videoId,
         owner: req.user._id
     })
 
-    if(!delVideo)
-    {
+    if (!delVideo) {
       throw new ApiError(404, "Video not found or you're not authorized to delete it")
     }
 
-     await Like.deleteMany({ video: videoId })
-     await Comment.deleteMany({ video: videoId })
-   return res
-   .status(200)
-   .json( new ApiResponse(200,{},"Video deleted successfully"))
+    const videoPublicId = getPublicIdFromUrl(delVideo.videoFile)
+    const thumbnailPublicId = getPublicIdFromUrl(delVideo.thumbnail)
+
+    Promise.all([
+        videoPublicId ? deleteFromCloudinary(videoPublicId, "video") : null,
+        thumbnailPublicId ? deleteFromCloudinary(thumbnailPublicId, "image") : null
+    ]).catch((err) => console.error("Cloudinary cleanup failed:", err))
+
+   
+    Like.deleteMany({ video: videoId })
+        .catch((err) => console.error("like cleanup failed:", err))
+    Comment.deleteMany({ video: videoId })
+        .catch((err) => console.error("comment cleanup failed:", err))
+    User.updateMany({ watchHistory: videoId }, { $pull: { watchHistory: videoId } })
+        .catch((err) => console.error("watchHistory cleanup failed:", err))
+    Playlist.updateMany({ video: videoId }, { $pull: { video: videoId } })
+    .catch((err) => console.error("playlist cleanup failed:", err))
+
+
+    return res
+    .status(200)
+    .json( new ApiResponse(200,{},"Video deleted successfully"))
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
