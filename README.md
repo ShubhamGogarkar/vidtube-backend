@@ -86,6 +86,11 @@ Most routes require authentication via a valid access token (sent as an httpOnly
 - `authLimiter` restricts repeated attempts on `/register`, `/login`, and `/refresh-token`.
 - All mutating routes on videos, playlists, comments, likes, and tweets verify resource ownership before making changes.
 
+## Frontend
+
+Frontend repository:
+https://github.com/ShubhamGogarkar/vidtube-frontend
+
 ## License
 
 MIT
